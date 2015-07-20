@@ -5,6 +5,7 @@ This module contains some auxiliary functions for processing the signals.
 import numpy as np
 import scipy as sp
 from sklearn.decomposition import PCA
+import random
 
 # Convolution filters:
 def sameconv(a,b):
@@ -73,7 +74,7 @@ def spikeconv(tsp,H,domain):
     spinds = tsp
 
     hlen = H.shape[0]
-    hwid = H.shape[1] # check thoses
+    hwid = H.shape[1] 
 
     nsp = len(tsp)
     twin = domain
@@ -87,12 +88,9 @@ def spikeconv(tsp,H,domain):
     j = 0
     while  (j<nsp) and (spinds[j]<t0):
         j = j + 1
-        
-    # print(np.where(spinds[j]>t0)[0])
-    # print(j)
-        
-    # find a shortcut for find and test better
-    # before I eliminate next statement
+    
+    #TODO: rewrite with where and test
+
     j = np.arange(nsp)[np.hstack(spinds>t0)][0]
     
     if j<nsp:
@@ -127,6 +125,8 @@ def extractPCABasis(*args):
         
         #TODO
         test function
+        
+        Note: not currently used
     """
     
     X,n = args
@@ -164,6 +164,8 @@ def STA(X,y,n):
            
            #TODO
            test function
+           
+           Note: not currently used
     """
     
     d,T = X.shape
@@ -185,3 +187,57 @@ def STA(X,y,n):
     return(sta)
     
     
+def simSpikes(coef,M_k,M_h,dt):
+    """
+        simSpikes- function to simulate
+        
+    """
+    print(np.exp(np.dot(M,coef))[1:10])
+    M = np.hstack(M_k,M_h)
+    length = M.shape[0]
+    print(length)
+    tsp = []
+    jbin = 0
+    tspnext = random.expovariate(1)
+    rprev = 0
+    nsp = 0
+    #bhlen = M_h.shape[] #TODO: change to the shape of h current 
+    # ihthi = [dt:dt:max(glmprs.iht)]';  % time points for sampling
+    # ihhi = interp1(glmprs.iht, ih, ihthi, 'linear', 0);
+    # hlen = length(ihhi);
+    chunk_size = 20 # decide on a size later
+    dc = -0.7
+
+    while jbin < length:
+        indx_chunk = np.arange(jbin,min(jbin+chunk_size-1,length))
+
+        intensity_chunk = np.exp(np.dot(M,coef)+dc)[indx_chunk]
+        
+        print('max indx_chunk')
+        print(intensity_chunk)
+        cum_intensity = np.cumsum(intensity_chunk)+rprev
+        print(cum_intensity)
+        print(len(cum_intensity))    
+        if (tspnext>cum_intensity[-1]): 
+            # No spike
+            print('no spike')
+            jbin = indx_chunk[-1]+1
+            rprev = cum_intensity[-1]
+        else: # Spike!
+            print(tspnext)
+            print(cum_intensity[-1])
+            print('spike'+str(jbin))
+            ispk = indx_chunk[np.where(cum_intensity>=tspnext)[0][0]]
+            tsp.append(ispk*dt)
+            postspike_limit = min(length,ispk+hlen)
+            indx_postSpk = np.arange(ispk+1,postspike_limit) 
+            #TODO: add if statement to record postspike current
+            #TODO: pass an H current separately
+            tspnext = random.expovariate(1)
+            rprev = 0
+            jbin = ispk + 1
+            nsp = nsp + 1 
+            # number of samples per iteration?
+            # print(tsp[-1])
+            chunk_size = max(20,np.round(1.5*jbin/nsp))#TODO: make safe for Python 2.7
+    return(tsp)

@@ -1,12 +1,21 @@
 """
     This module contains classes for simulation and estimation of non-homogeneous Poisson processes.
+    This version uses RefreshRate = 100 which might not be applicable for general Poisson processes.
+    Set to RefreshRate to 1.
 """
 
 import numpy as np
 from scipy import optimize
 from scipy import random
+import random as rnd
 import unittest
 import warnings
+
+
+
+global RefreshRate
+
+RefreshRate = 100
 
 class PPModel(object):
     """
@@ -56,17 +65,25 @@ class PPModel(object):
         
         # check if y has correct shape
         if y.shape!=(self.covariates.shape[1],):
-            raise ValueError(str(y.shape)+str(self.covariates.shape[0])+'y should be a 1D array with length equal to dimension of the covariates.')
+            raise ValueError('y should be a 1D array with length equal to dimension of the covariates.')
     
         # calculate the intensity of the Poisson process
         if self.f == 'exp': 
-            intensity = np.exp(np.dot(self.covariates.T,coef)) # log-link
+            intensity = np.exp(np.dot(self.covariates.T,coef)+0.5) # log-link
         else:        
             intensity = self.f(np.dot(self.covariates.T,coef))[0]
         
-        # bins with events and bins with no events
-        l = sum(intensity)*self.dt - sum(y*np.log(intensity))
+      
         
+        # displaying the individual terms of the negative log-likelihood
+        # print(sum(intensity)*self.dt)
+        # print(sum(y*np.log(intensity)))
+        
+        
+        # bins with events and bins with no events
+        l = sum(intensity)*self.dt/RefreshRate - sum(y*np.log(intensity))
+        # diplaying the negative log-likelihood        
+        # print(l)
         return(l)
         
     def gradNegLogL(self,coef,y):
@@ -84,13 +101,15 @@ class PPModel(object):
             
             g : the gradient
         """
+        
+        
         if self.f == 'exp': 
             # log-link
             intensity = np.exp(np.dot(self.covariates.T,coef)) 
-            g = np.dot(self.covariates,intensity)*self.dt - np.dot(self.covariates,y) 
+            g = np.dot(self.covariates,intensity)*self.dt/RefreshRate - np.dot(self.covariates,y) 
         else:
             intensity,d_intensity = self.f(np.dot(self.covariates.T,coef))
-            g = np.dot(self.covariates,d_intensity)*self.dt - np.dot(self.covariates,(y*intensity/d_intensity))
+            g = np.dot(self.covariates,d_intensity)*self.dt/RefreshRate - np.dot(self.covariates,(y*intensity/d_intensity))
                
         return(g) 
         
@@ -111,17 +130,17 @@ class PPModel(object):
             H : the Hessian
         """
         if self.f == 'exp':
-            intensity = np.exp(np.dot(self.covariates.T,coef)) 
             
+            intensity = np.exp(np.dot(self.covariates.T,coef)) 
             D = np.diag(intensity)
-            #H = X^TDX
-            H = np.dot(np.dot(self.covariates,D),self.covariates)
+            # H = X^TDX
+            H = np.dot(np.dot(self.covariates,D),self.covariates)*self.dt/RefreshRate
         # else:
-            # finish writing derivative
+            # TODO: add case with general nonlinear function
         return(H)
     
     
-    def fit(self, y,start_coef=None, method='L-BFGS-B', maxiter=400, disp=True):
+    def fit(self, y,start_coef=None, method='Nelder-Mead', maxiter=15000, disp=True,maxfev = 10000):
         """  
         Computes an estimate for the unknown coefficients based on response y.
                         
@@ -163,7 +182,7 @@ class PPModel(object):
         """
         
         
-        opts = {'disp':disp,'maxiter':maxiter}
+        opts = {'disp':disp,'maxiter':maxiter,'maxfev':maxfev}
         if start_coef==None:
             start_coef = np.zeros((self.covariates.shape[0],))
         res = optimize.minimize(self.negLogL,start_coef,jac = self.gradNegLogL,hess = self.hessNegLogL, args = y, options = opts, method = method)
@@ -173,7 +192,9 @@ class PPModel(object):
     def sampleEvents(self,coef):
         """
             Generates a sequence of events based on a Poisson process with
-            a time-dependent intensity.
+            a time-dependent intensity. The procedure generates an event in the
+            i'th bin with probability intensity(i)*dt, and events in distinct bins
+            are independent (Bernoulli trials).
             
             Parameters
             ----------
@@ -192,11 +213,46 @@ class PPModel(object):
             intensity = np.exp(np.dot(self.covariates.T,coef))
         else:
             intensity = self.f(np.dot(self.covariates.T,coef))[0]
-        #TODO
-        # raise error if coef empty
+
         u = np.random.uniform(size = len(intensity))   
+        #TODO: check if intensity*self.dt<1
         y = (intensity*self.dt>u)          
         return(y.astype(int))
+    
+    def sampleAcceptRejectPP(self,coef):
+        """
+        Samples from a nonhomogenous Poisson process by first sampling interarrival times
+        from a homogeneous Poisson process with rate lambda_max = max(intensity), and then
+        accepting the observations with probability intensity/lambda_max
+            
+        """
+        if self.f=='exp':
+            intensity = np.exp(np.dot(self.covariates.T,coef))
+        else:
+            intensity = self.f(np.dot(self.covariates.T,coef))[0]
+        
+        lambda_max = max(intensity)
+        
+        dt = self.dt
+        N = len(intensity)
+        
+        # generating eventTimes based on hom PP with lambda_max
+        eventTime = 0        
+        eventTimes = []
+        while eventTime<N*dt:
+            eventTime = eventTime + rnd.expovariate(1./lambda_max)*dt
+            print(eventTime)
+            if eventTime<N*dt:
+                eventTimes.append(eventTime)
+        eventTimes = np.asarray(eventTimes)
+        time_idx = (eventTimes/dt).astype(int) 
+
+
+        u = np.random.uniform(size = len(eventTimes))   
+        accepted = (intensity[time_idx]/lambda_max>u)
+        y = np.zeros((N,))
+        y[accepted]=1
+        return(y)
         
     def samplePiecewiseConstantPP(self,coef):
         """
@@ -295,20 +351,38 @@ class testPoissonProcessClasses(unittest.TestCase):
             error_rate = 0
             warnings.warn('No events observed.')
             
-        tol = .1
+        tol = 1
         self.assertTrue(error_rate < tol)  
         
-    def test_simulation(self):
+    def test_simulation_constant(self):
         """
-            This function tests how good the simulation of the Poisson process is.
+            This test checks whether the mean number of spikes is 
+            insensity*dt*N (intensity is constant).
             
         """
         N = 1000
-        intensity = 3*np.ones((N,))
+        theta = np.ones((N,))
+        intensity = np.exp(theta)
         model = PPModel(np.eye(N),dt = 0.1)
-        y = model.sampleEvents(3*np.ones((N,)))
-        tol = 1
-        self.assertTrue(np.sum(np.abs(sum(y).astype('Float64'))/len(intensity) - 0.3)<tol,msg = 'Incomplete test')
+        y = model.sampleEvents(theta)
+        tol = 0.05
+        rate = sum(y).astype('Float64')/len(intensity)
+        self.assertTrue(np.abs(rate - intensity[0]*model.dt)<tol,"Average rate of events is not consistent with the probability")
+
+    def test_simulation(self):
+        """
+            This test checks whether the mean number of spikes is 
+            sum(insensity)*dt.
+            
+        """
+        N = 1000
+        theta = np.sin(np.arange(N))
+        intensity = np.exp(theta)
+        model = PPModel(np.eye(N),dt = 0.1)
+        y = model.sampleEvents(theta)
+        tol = 0.05
+        rate = sum(y).astype('Float64')/len(intensity)
+        self.assertTrue(np.abs(rate - sum(intensity)*model.dt/len(intensity))<tol,"Average rate of events is not consistent with the probability")
 
     def test_oneInput(self): 
         #TODO
