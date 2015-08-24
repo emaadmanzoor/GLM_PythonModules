@@ -6,6 +6,7 @@ import numpy as np
 # from oct2py import octave # needed for performing convolution through octave mex function
 from auxiliary_functions import sameconv
 from auxiliary_functions import spikeconv
+from auxiliary_functions import makeInterpMatrix2
 import os
 import pandas as pd
 
@@ -291,7 +292,7 @@ def construct_M_k(Stim,K,dt):
     
 
     # reading the interpolating matrix - might take some time (direct)
-    MM = np.array(pd.read_csv(os.path.join(os.getcwd(),'..','code','InterpolatingMatrix.csv'),header = None))  
+    #MM = np.array(pd.read_csv(os.path.join(os.getcwd(),'..','code','InterpolatingMatrix.csv'),header = None))  
+    MM = makeInterpMatrix2(len(Stim),round(1/dt))
     M_k = np.dot(MM,Stim_convolved)
-    
     return(M_k)

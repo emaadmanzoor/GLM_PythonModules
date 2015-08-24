@@ -1,7 +1,5 @@
 """
     This module contains classes for simulation and estimation of non-homogeneous Poisson processes.
-    This version uses RefreshRate = 100 which might not be applicable for general Poisson processes.
-    Set to RefreshRate to 1.
 """
 
 import numpy as np
@@ -10,12 +8,6 @@ from scipy import random
 import random as rnd
 import unittest
 import warnings
-
-
-
-global RefreshRate
-
-RefreshRate = 100
 
 class PPModel(object):
     """
@@ -69,21 +61,14 @@ class PPModel(object):
     
         # calculate the intensity of the Poisson process
         if self.f == 'exp': 
-            intensity = np.exp(np.dot(self.covariates.T,coef)+0.5) # log-link
+            intensity = np.exp(np.dot(self.covariates.T,coef)) # log-link
         else:        
             intensity = self.f(np.dot(self.covariates.T,coef))[0]
-        
-      
-        
-        # displaying the individual terms of the negative log-likelihood
-        # print(sum(intensity)*self.dt)
-        # print(sum(y*np.log(intensity)))
-        
-        
+                
         # bins with events and bins with no events
-        l = sum(intensity)*self.dt/RefreshRate - sum(y*np.log(intensity))
-        # diplaying the negative log-likelihood        
-        # print(l)
+        l = sum(intensity)*self.dt - sum(y*np.log(intensity))
+        # diplaying the negative log-likelihood      
+        print(l)
         return(l)
         
     def gradNegLogL(self,coef,y):
@@ -101,15 +86,13 @@ class PPModel(object):
             
             g : the gradient
         """
-        
-        
         if self.f == 'exp': 
             # log-link
             intensity = np.exp(np.dot(self.covariates.T,coef)) 
-            g = np.dot(self.covariates,intensity)*self.dt/RefreshRate - np.dot(self.covariates,y) 
+            g = np.dot(self.covariates,intensity)*self.dt - np.dot(self.covariates,y) 
         else:
             intensity,d_intensity = self.f(np.dot(self.covariates.T,coef))
-            g = np.dot(self.covariates,d_intensity)*self.dt/RefreshRate - np.dot(self.covariates,(y*intensity/d_intensity))
+            g = np.dot(self.covariates,d_intensity)*self.dt - np.dot(self.covariates,(y*intensity/d_intensity))
                
         return(g) 
         
@@ -130,17 +113,17 @@ class PPModel(object):
             H : the Hessian
         """
         if self.f == 'exp':
-            
             intensity = np.exp(np.dot(self.covariates.T,coef)) 
+            
             D = np.diag(intensity)
-            # H = X^TDX
-            H = np.dot(np.dot(self.covariates,D),self.covariates)*self.dt/RefreshRate
+            #H = X^TDX
+            H = np.dot(np.dot(self.covariates,D),self.covariates)
         # else:
-            # TODO: add case with general nonlinear function
+            # finish writing derivative
         return(H)
     
     
-    def fit(self, y,start_coef=None, method='Nelder-Mead', maxiter=15000, disp=True,maxfev = 10000):
+    def fit(self, y,start_coef=None, method='L-BFGS-B', maxiter=15000, disp=True,maxfev = 10000):
         """  
         Computes an estimate for the unknown coefficients based on response y.
                         
@@ -247,7 +230,7 @@ class PPModel(object):
         eventTimes = np.asarray(eventTimes)
         time_idx = (eventTimes/dt).astype(int) 
 
-
+        # 
         u = np.random.uniform(size = len(eventTimes))   
         accepted = (intensity[time_idx]/lambda_max>u)
         y = np.zeros((N,))

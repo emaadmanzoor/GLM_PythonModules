@@ -241,3 +241,61 @@ def simSpikes(coef,M_k,M_h,dt):
             # print(tsp[-1])
             chunk_size = max(20,np.round(1.5*jbin/nsp))#TODO: make safe for Python 2.7
     return(tsp)
+    
+    
+    
+def makeInterpMatrix(slen,nofBins):
+    c1 = np.arange(1/nofBins,1+1/nofBins,1/nofBins)
+    cc = np.hstack((c1,c1[::-1] - 1/nofBins))
+    print(cc.shape)
+    M = np.zeros((nofBins*slen,slen))
+    print(M.shape)
+    for j in range(slen-1):
+        M[j*nofBins:(j+2)*nofBins,j] = cc  
+    M[nofBins*slen-nofBins:nofBins*slen,slen-1] = c1;
+    return(M)
+    
+def makeInterpMatrix2(slen,nofBins):
+    c1 = np.arange(1/nofBins,1+1/nofBins,1/nofBins)
+    cc = np.hstack((c1,c1[::-1] - 1/nofBins))
+    M = np.zeros((nofBins*slen,slen))
+    phi = np.floor(nofBins/2)
+    #M(1:nbn+phi)= cc(phi+1:end);
+    #for j = 2:slen-1
+    #    M((j-1)*nbn-phi+1:(j+1)*nbn-phi,j) = cc;
+    #    end
+    #M(nbn*slen-nbn-phi+1:nbn*slen,slen) = cc(1:nbn+phi);
+
+    M[:nofBins+phi,0] = cc[phi:]
+    for j in np.arange(1,slen-1):
+        M[j*nofBins-phi:(j+2)*nofBins-phi,j] = cc
+    M[nofBins*slen-nofBins - phi:nofBins*slen,slen-1] = cc[:nofBins+phi];
+    return(M)
+        
+    # row = np.array([0, 3, 1, 0])
+    # col = np.array([0, 3, 1, 2])
+    # data = np.array([4, 5, 7, 9])
+    # mtx = sps.coo_matrix((data, (row, col)), shape=(4, 4))
+        
+        
+    
+ 
+# MATLAB code   
+# function M = makeInterpMatrix(slen, nbn);
+# M = makeInterpMatrix(slen, dt);
+#
+#  Make (sparse matrix) for interpolation.  
+# 
+# (second arg can be # bins or bin size).
+
+# if nbn<1
+#    nbn = round(1./nbn);
+#end
+
+#c1 = [1./nbn:1./nbn:1]';
+#cc = [c1; flipud(c1)-1/nbn];
+#M = spalloc(nbn*slen,slen, 2*nbn*slen);
+#for j = 1:slen-1
+#   M((j-1)*nbn+1:(j+1)*nbn,j) = cc;
+#end
+#M(nbn*slen-nbn+1:nbn*slen,slen) = c1;

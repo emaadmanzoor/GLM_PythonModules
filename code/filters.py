@@ -185,3 +185,5 @@ def createPostSpikeBasis(pars,dt):
     hbasis_orth = - sp.linalg.orth(hbasis)
     
     return(hbasis,hbasis_orth,t_domain)
+    
+    
