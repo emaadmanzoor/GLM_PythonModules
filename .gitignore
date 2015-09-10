@@ -1,0 +1,3 @@
+*.pyc
+*.dat
+notebooks/.ipynb_checkpoints
