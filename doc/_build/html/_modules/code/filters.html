@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>code.filters &mdash; code  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="code  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for code.filters</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    This module contains functions which generate cosine bump basis vectors </span>
+<span class="sd">    for the stimulus and post-spike filters.</span>
+<span class="sd">    </span>
+<span class="sd">    Function list:</span>
+<span class="sd">    createRaisedCosineBasis</span>
+<span class="sd">    createStimulusBasis</span>
+<span class="sd">    createPostSpikeBasis</span>
+<span class="sd">    </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
+
+
+<div class="viewcode-block" id="createRaisedCosineBasis"><a class="viewcode-back" href="../../code.html#code.filters.createRaisedCosineBasis">[docs]</a><span class="k">def</span> <span class="nf">createRaisedCosineBasis</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">peaks</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Generates a basis of raised cosine bump functions.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ---------- </span>
+<span class="sd">        </span>
+<span class="sd">        n : int</span>
+<span class="sd">            the number of basis functions</span>
+<span class="sd">        peaks : 1D array of length 2 </span>
+<span class="sd">            the range within which the peaks occur </span>
+<span class="sd">        b : float</span>
+<span class="sd">            offset</span>
+<span class="sd">        dt : float</span>
+<span class="sd">            discretization step of the time domain</span>
+<span class="sd">        </span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        basis : array of shape </span>
+<span class="sd">            basis of cosine bump functions</span>
+<span class="sd">        t_domain : </span>
+<span class="sd">            the time domain</span>
+<span class="sd">            </span>
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">              </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># define nonlinear functions    </span>
+    <span class="k">def</span> <span class="nf">nlin</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="mf">1e-20</span><span class="p">))</span>
+    <span class="k">def</span> <span class="nf">invnl</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1e-20</span><span class="p">)</span>
+  
+    <span class="c"># generate basis of raised cosines     </span>
+    <span class="n">y_range</span> <span class="o">=</span> <span class="n">nlin</span><span class="p">(</span><span class="n">peaks</span><span class="o">+</span><span class="n">b</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y_range</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> 
+    <span class="n">centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mf">1e-12</span><span class="p">,</span><span class="n">db</span><span class="p">)</span>
+    <span class="n">mxt</span> <span class="o">=</span> <span class="n">invnl</span><span class="p">(</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">db</span><span class="p">)</span> <span class="o">-</span> <span class="n">b</span>
+    <span class="n">t_domain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">mxt</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span>
+     
+    <span class="k">def</span> <span class="nf">applyCosNonlinearity</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">dc</span><span class="p">):</span>
+        <span class="k">return</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="o">-</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">,(</span><span class="n">x</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="n">dc</span><span class="o">/</span><span class="mi">2</span><span class="p">)))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+        
+    <span class="n">basis</span> <span class="o">=</span> <span class="n">applyCosNonlinearity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">nlin</span><span class="p">(</span><span class="n">t_domain</span><span class="o">+</span><span class="n">b</span><span class="p">),[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">centers</span><span class="p">,[</span><span class="nb">len</span><span class="p">(</span><span class="n">t_domain</span><span class="p">),</span><span class="mi">1</span><span class="p">]),</span><span class="n">db</span><span class="p">)</span>
+
+    <span class="k">return</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span><span class="n">t_domain</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="createStimulusBasis"><a class="viewcode-back" href="../../code.html#code.filters.createStimulusBasis">[docs]</a><span class="k">def</span> <span class="nf">createStimulusBasis</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">nkt</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    </span>
+<span class="sd">    Generates a basis for a stimulus filter.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------    </span>
+<span class="sd">    </span>
+<span class="sd">    pars : dictionary of basis parameters</span>
+<span class="sd">    pars[&#39;neye&#39;] : number of identity basis vectors in front</span>
+<span class="sd">    pars[&#39;n&#39;] : number of vectors which are raised cosines</span>
+<span class="sd">    pars[&#39;kpeaks&#39;] : peak position for first and last vector</span>
+<span class="sd">    pars[&#39;b&#39;] : offset for linear scaling</span>
+<span class="sd">    pars[&#39;nkt&#39;] : number of time samples in basis (optional?)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    </span>
+<span class="sd">    kbasis : basis</span>
+<span class="sd">    kbasis_orth : normalized basis</span>
+<span class="sd">    t_domain : time domain</span>
+
+<span class="sd">    </span>
+<span class="sd">    Notes</span>
+<span class="sd">    -----   </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c"># Extract parameters</span>
+    <span class="n">neye</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">kpeaks</span><span class="p">,</span><span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;neye&#39;</span><span class="p">],</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;n&#39;</span><span class="p">],</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;kpeaks&#39;</span><span class="p">],</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">]]</span>
+   
+     
+    <span class="c"># Generate basis of raised cosines  </span>
+  
+    <span class="c"># spacing of x axis must be of units of 1!</span>
+    <span class="n">kdt</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">kbasis0</span><span class="o">=</span> <span class="n">createRaisedCosineBasis</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">kpeaks</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">kdt</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">nkt0</span> <span class="o">=</span> <span class="n">kbasis0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c"># concatenate identity vectors</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">neye</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">neye</span><span class="p">,</span><span class="n">n</span><span class="p">))))</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nkt0</span><span class="p">,</span><span class="n">neye</span><span class="p">)),</span> <span class="n">kbasis0</span><span class="p">))</span>
+    <span class="n">kbasis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">))</span>
+    <span class="n">kbasis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">kbasis</span><span class="p">)</span>
+
+
+    <span class="c"># adjusting the basis time domain to nkt observations</span>
+    <span class="n">nkt0</span> <span class="o">=</span> <span class="n">kbasis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">nkt</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">nkt0</span> <span class="o">&lt;</span> <span class="n">nkt</span><span class="p">:</span> 
+            <span class="n">kbasis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nkt</span><span class="o">-</span><span class="n">nkt0</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="n">neye</span><span class="p">)),</span> <span class="n">kbasis</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">nkt0</span> <span class="o">&gt;</span> <span class="n">nkt</span><span class="p">:</span>
+            <span class="n">kbasis</span> <span class="o">=</span> <span class="n">kbasis</span><span class="p">[</span><span class="n">kbasis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">nkt</span><span class="p">:</span><span class="n">kbasis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],:]</span>
+          
+    <span class="c"># normalize columns</span>
+    <span class="c"># (normalization can return array of smaller dimension if basis is not of full rank)</span>
+    <span class="n">kbasis_orth</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">orth</span><span class="p">(</span><span class="n">kbasis</span><span class="p">)</span>
+    
+    <span class="c"># </span>
+    <span class="n">t_domain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">kbasis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">return</span><span class="p">(</span><span class="n">kbasis</span><span class="p">,</span><span class="n">kbasis_orth</span><span class="p">,</span><span class="n">t_domain</span><span class="p">)</span>      
+    </div>
+<div class="viewcode-block" id="createPostSpikeBasis"><a class="viewcode-back" href="../../code.html#code.filters.createPostSpikeBasis">[docs]</a><span class="k">def</span> <span class="nf">createPostSpikeBasis</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a basis for a post-spike filter.</span>
+<span class="sd">    </span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">        </span>
+<span class="sd">        pars : a dictionary of basis parameters</span>
+<span class="sd">        pars[&#39;n&#39;] : </span>
+<span class="sd">            number of vectors which are raised cosines</span>
+<span class="sd">        pars[&#39;hpeaks&#39;] : </span>
+<span class="sd">            peak position for first and last vector</span>
+<span class="sd">        pars[&#39;b&#39;] : </span>
+<span class="sd">            offset for linear scaling</span>
+<span class="sd">        pars[&#39;absref&#39;] : </span>
+<span class="sd">            absolute refractory period (optional)</span>
+<span class="sd">            </span>
+<span class="sd">   </span>
+<span class="sd">        </span>
+<span class="sd">        dt : discretization step of the time domain</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">        --------</span>
+<span class="sd">        hbasis : basis</span>
+<span class="sd">        hbasis_orth : normalized basis</span>
+<span class="sd">        t_domain : the time domain</span>
+<span class="sd">        </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c"># Set the parameters</span>
+    <span class="n">n</span><span class="p">,</span><span class="n">hpeaks</span><span class="p">,</span><span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;n&#39;</span><span class="p">],</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;hpeaks&#39;</span><span class="p">],</span><span class="n">pars</span><span class="p">[</span><span class="s">&#39;b&#39;</span><span class="p">]]</span>
+    <span class="k">if</span> <span class="s">&#39;absref&#39;</span> <span class="ow">in</span> <span class="n">pars</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>        
+        <span class="n">absref</span> <span class="o">=</span> <span class="n">pars</span><span class="p">[</span><span class="s">&#39;absref&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">absref</span> <span class="o">=</span> <span class="mi">0</span>
+        
+    <span class="k">if</span> <span class="n">absref</span><span class="o">&gt;</span><span class="n">dt</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
+    
+    
+    <span class="n">hbasis</span><span class="p">,</span><span class="n">t_domain</span> <span class="o">=</span> <span class="n">createRaisedCosineBasis</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">hpeaks</span><span class="p">,</span><span class="n">b</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span>
+    
+    
+    <span class="c"># set first cosine basis vector bins (before 1st peak) to 1</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_domain</span><span class="o">&lt;=</span><span class="n">hpeaks</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>       
+    <span class="n">hbasis</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c"># create first basis vector as a step function for absolute refractory period</span>
+     
+    <span class="k">if</span> <span class="n">absref</span> <span class="o">&gt;=</span> <span class="n">dt</span><span class="p">:</span>
+        <span class="n">ih0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">hbasis</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">ih0</span><span class="p">[</span><span class="n">t_domain</span><span class="o">&lt;</span><span class="n">absref</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">hbasis</span><span class="p">[</span><span class="n">t_domain</span><span class="o">&lt;</span><span class="n">absref</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">hbasis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">ih0</span><span class="p">,</span><span class="n">hbasis</span><span class="p">))</span>
+    
+    <span class="c"># make orthogonal (the negative sign is needed to synchronize with Matlab)</span>
+    <span class="c"># normalization can return array of smaller dimension if basis is not of full rank    </span>
+    <span class="n">hbasis_orth</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">orth</span><span class="p">(</span><span class="n">hbasis</span><span class="p">)</span>
+    
+    <span class="k">return</span><span class="p">(</span><span class="n">hbasis</span><span class="p">,</span><span class="n">hbasis_orth</span><span class="p">,</span><span class="n">t_domain</span><span class="p">)</span>
+    
+    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
