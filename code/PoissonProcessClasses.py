@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
     This module contains classes for simulation and estimation of non-homogeneous Poisson processes.
 """

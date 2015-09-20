@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 This module contains some auxiliary functions for processing the signals.
 
@@ -187,115 +189,94 @@ def STA(X,y,n):
     return(sta)
     
     
-def simSpikes(coef,M_k,M_h,dt):
+def simSpikes(coef,M_k,H=None,ht_domain=None,dt=1):
     """
-        simSpikes- function to simulate
+        simSpikes - function to simulate
         
     """
-    print(np.exp(np.dot(M,coef))[1:10])
-    M = np.hstack(M_k,M_h)
-    length = M.shape[0]
-    print(length)
-    tsp = []
+    
+    # add check for the correct number of coefficients 
+    # (depending on whether H is provided)
+    coeff_k = coef[:M_k.shape[1]]
+    cov_effects = np.dot(M_k,coeff_k)
+    
+    if H is not None:
+        coeff_h = coef[M_k.shape[1]:]
+        ih = np.dot(H,coeff_h)
+        hlen = len(ih)
+        # interpolate with new positions
+        ih = np.interp(np.arange(dt,ht_domain[-1],dt),ht_domain,ih)
+
+
+    length = M_k.shape[0]
     jbin = 0
-    tspnext = random.expovariate(1)
     rprev = 0
     nsp = 0
-    #bhlen = M_h.shape[] #TODO: change to the shape of h current 
-    # ihthi = [dt:dt:max(glmprs.iht)]';  % time points for sampling
-    # ihhi = interp1(glmprs.iht, ih, ihthi, 'linear', 0);
-    # hlen = length(ihhi);
-    chunk_size = 20 # decide on a size later
-    dc = -0.7
+    chunk_size = 100 # decide on a size later
+    tsp = []
+    tspnext = random.expovariate(1)
+
 
     while jbin < length:
-        indx_chunk = np.arange(jbin,min(jbin+chunk_size-1,length))
-
-        intensity_chunk = np.exp(np.dot(M,coef)+dc)[indx_chunk]
-        
-        print('max indx_chunk')
-        print(intensity_chunk)
-        cum_intensity = np.cumsum(intensity_chunk)+rprev
-        print(cum_intensity)
-        print(len(cum_intensity))    
+        indx_chunk = np.arange(jbin,min(jbin+chunk_size-1,length)).astype(int)
+        intensity_chunk = np.exp(cov_effects[indx_chunk])
+        cum_intensity = np.cumsum(intensity_chunk)*dt/100+rprev
+   
         if (tspnext>cum_intensity[-1]): 
             # No spike
             print('no spike')
             jbin = indx_chunk[-1]+1
             rprev = cum_intensity[-1]
         else: # Spike!
-            print(tspnext)
-            print(cum_intensity[-1])
             print('spike'+str(jbin))
             ispk = indx_chunk[np.where(cum_intensity>=tspnext)[0][0]]
             tsp.append(ispk*dt)
-            postspike_limit = min(length,ispk+hlen)
-            indx_postSpk = np.arange(ispk+1,postspike_limit) 
-            #TODO: add if statement to record postspike current
-            #TODO: pass an H current separately
+            nsp = nsp + 1 
+            
+            # postspike effect if H is provided
+            if H is not None: 
+                
+                postspike_limit = min(length,ispk+hlen)
+                indx_postSpk = np.arange(ispk+1,postspike_limit)
+                
+                # adding the post-spike effect
+                cov_effects[indx_postSpk] = cov_effects[indx_postSpk]+ih[:(postspike_limit - ispk)-1]
+                
+                
             tspnext = random.expovariate(1)
             rprev = 0
             jbin = ispk + 1
-            nsp = nsp + 1 
-            # number of samples per iteration?
-            # print(tsp[-1])
-            chunk_size = max(20,np.round(1.5*jbin/nsp))#TODO: make safe for Python 2.7
+            
+            chunk_size = max(20,np.round(1.5*jbin/nsp)) #TODO: make safe for Python 2.7
+    
     return(tsp)
     
     
     
 def makeInterpMatrix(slen,nofBins):
+    """
+        
+    """    
+    
     c1 = np.arange(1/nofBins,1+1/nofBins,1/nofBins)
     cc = np.hstack((c1,c1[::-1] - 1/nofBins))
-    print(cc.shape)
     M = np.zeros((nofBins*slen,slen))
-    print(M.shape)
     for j in range(slen-1):
         M[j*nofBins:(j+2)*nofBins,j] = cc  
     M[nofBins*slen-nofBins:nofBins*slen,slen-1] = c1;
     return(M)
     
 def makeInterpMatrix2(slen,nofBins):
+    """
+        Note: assumes slen < nofBins
+    """
     c1 = np.arange(1/nofBins,1+1/nofBins,1/nofBins)
     cc = np.hstack((c1,c1[::-1] - 1/nofBins))
     M = np.zeros((nofBins*slen,slen))
     phi = np.floor(nofBins/2)
-    #M(1:nbn+phi)= cc(phi+1:end);
-    #for j = 2:slen-1
-    #    M((j-1)*nbn-phi+1:(j+1)*nbn-phi,j) = cc;
-    #    end
-    #M(nbn*slen-nbn-phi+1:nbn*slen,slen) = cc(1:nbn+phi);
 
     M[:nofBins+phi,0] = cc[phi:]
     for j in np.arange(1,slen-1):
         M[j*nofBins-phi:(j+2)*nofBins-phi,j] = cc
     M[nofBins*slen-nofBins - phi:nofBins*slen,slen-1] = cc[:nofBins+phi];
     return(M)
-        
-    # row = np.array([0, 3, 1, 0])
-    # col = np.array([0, 3, 1, 2])
-    # data = np.array([4, 5, 7, 9])
-    # mtx = sps.coo_matrix((data, (row, col)), shape=(4, 4))
-        
-        
-    
- 
-# MATLAB code   
-# function M = makeInterpMatrix(slen, nbn);
-# M = makeInterpMatrix(slen, dt);
-#
-#  Make (sparse matrix) for interpolation.  
-# 
-# (second arg can be # bins or bin size).
-
-# if nbn<1
-#    nbn = round(1./nbn);
-#end
-
-#c1 = [1./nbn:1./nbn:1]';
-#cc = [c1; flipud(c1)-1/nbn];
-#M = spalloc(nbn*slen,slen, 2*nbn*slen);
-#for j = 1:slen-1
-#   M((j-1)*nbn+1:(j+1)*nbn,j) = cc;
-#end
-#M(nbn*slen-nbn+1:nbn*slen,slen) = c1;
