@@ -282,9 +282,6 @@ def construct_M_k(Stim,K,dt):
     
     # convolving the stimulus with each basis function
     Stim_convolved = sameconv(Stim,K) 
-    
-    coeff_k0 = np.array([ 0.061453,0.284916,0.860335,1.256983,0.910615,0.488660,-0.887091,0.097441,0.026607,-0.090147])
-    print(sum(np.dot(Stim_convolved,coeff_k0)))
 
     nofBins = int(1/dt)
     

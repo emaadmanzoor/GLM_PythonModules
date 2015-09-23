@@ -8,6 +8,8 @@ import numpy as np
 import scipy as sp
 from sklearn.decomposition import PCA
 import random
+import copy
+import unittest
 
 # Convolution filters:
 def sameconv(a,b):
@@ -191,12 +193,42 @@ def STA(X,y,n):
     
 def simSpikes(coef,M_k,H=None,ht_domain=None,dt=1):
     """
-        simSpikes - function to simulate
+        simSpikes - function to simulate a neuronal activity by sampling a Poisson process 
+        with conditional intensity based on the stimulus, with an option to add the effect
+        of the postspike kernel after each spike
         
+        Inputs
+        ------
+        coef: 
+            a coefficient containing the coefficients corresponding to the stimulus effects,
+            constant effects and the postspike effects if there are any
+
+        M_k: 
+            covariate for the effects of the stimulus and the constant
+        H: 
+            post-spike filtering matrix
+        ht_domain: 
+            the domain of the post-spike filter
+        dt: 
+            time step
+            
+        Returns
+        -------
+        
+        tsp: 
+            a list of the spike times
+            
+        Notes
+        -----
+        Instead of directly passing M_k, I can pass the k-filter and the constant separately.
+        Then I can interpolate according to dt.
+        
+    
     """
     
-    # add check for the correct number of coefficients 
+    # TODO: add check for the correct number of coefficients 
     # (depending on whether H is provided)
+    
     coeff_k = coef[:M_k.shape[1]]
     cov_effects = np.dot(M_k,coeff_k)
     
@@ -221,6 +253,9 @@ def simSpikes(coef,M_k,H=None,ht_domain=None,dt=1):
         indx_chunk = np.arange(jbin,min(jbin+chunk_size-1,length)).astype(int)
         intensity_chunk = np.exp(cov_effects[indx_chunk])
         cum_intensity = np.cumsum(intensity_chunk)*dt/100+rprev
+        
+        print(tspnext)
+        print(cum_intensity[-1])
    
         if (tspnext>cum_intensity[-1]): 
             # No spike
@@ -245,11 +280,136 @@ def simSpikes(coef,M_k,H=None,ht_domain=None,dt=1):
                 
             tspnext = random.expovariate(1)
             rprev = 0
-            jbin = ispk + 1
-            
+            jbin = ispk + 1          
             chunk_size = max(20,np.round(1.5*jbin/nsp)) #TODO: make safe for Python 2.7
     
     return(tsp)
+    
+def simSpikesMultiple(coeff_list,M_k,H=None,ht_domain=None,dt=1):
+    """
+        simSpikes - function to simulate a neuronal activity for multiple Neurons by sampling a Poisson process 
+        with conditional intensity based on the stimulus, with an option to add the postspike effects from other neurons
+
+        Inputs
+        ------
+        coef: list
+            a list containing the coefficients corresponding to the stimulus effects,
+            constant effects and the postspike effects for each neuron
+
+        M_k: 
+            covariate for the effects of the stimulus and the constant
+        
+        H: 
+            post-spike filtering matrix
+        
+        ht_domain: 
+            the domain of the post-spike filter
+        
+        dt: 
+            time step
+            
+        Note: 
+            We assume that the Stimulus is the same and filtered with the same stimulus matrix,
+            but we allow to change the coefficients. We also assume that the post-spike and coupling
+            kernels are the same - not necessary. At this stage we expect the user to provide both
+            post-spike and coupling effects, there is no option to provide post-spike effects only,
+            but one can simply set the coefficients to zero.
+            
+            
+        Returns
+        -------
+            tsp_list: a list which contains the lists of spike times for each neuron
+        
+    """
+    
+    # add check for the correct number of coefficients 
+    # (depending on whether H is provided)
+    
+    nofNeurons = len(coeff_list)
+    cov_effects = []
+    ih = []
+    
+    for i in range(nofNeurons):
+        
+        coeff_k = coeff_list[i][:M_k.shape[1]]
+        cov_effects.append(np.dot(M_k,coeff_k))
+    
+            
+    # convert to an nd array
+    cov_effects = np.array(cov_effects).T
+
+    
+    if H is not None:
+        for i in range(nofNeurons):
+            coeff_h = coeff_list[i][M_k.shape[1]:]
+            #ih.append(np.dot(H,np.reshape(coeff_h,(H.shape[1],nofNeurons),order = 'F')))
+
+            # interpolate with new positions
+            # skip the interpolation for now
+            ih_interpolated = np.zeros((len(np.arange(dt,ht_domain[-1],dt)),nofNeurons))
+            for j in range(nofNeurons):
+                ih_interpolated[:,j] = np.interp(np.arange(dt,ht_domain[-1],dt),ht_domain,np.dot(H,np.reshape(coeff_h,(H.shape[1],nofNeurons),order = 'F'))[:,j])
+            ih.append(ih_interpolated)
+                # hlen = len(ih)
+            hlen = H.shape[0]
+            
+
+    length = M_k.shape[0]
+    jbin = 0
+    rprev = [0]*nofNeurons
+    rprev =np.zeros((nofNeurons,))
+    chunk_size = 100 # decide on a size later
+    # create a list of lists to hold the spike times for each neuron
+    tsp_list = [[] for i in range(nofNeurons)]
+    tspnext_list = [random.expovariate(1) for i in range(nofNeurons)]
+    nsp = np.zeros(nofNeurons)
+
+
+
+    
+    
+    while jbin < length:
+        indx_chunk = np.arange(jbin,min(jbin+chunk_size-1,length)).astype(int)
+        intensity_chunk = np.exp(cov_effects[indx_chunk,:])
+        cum_intensity = np.cumsum(intensity_chunk,axis=0)*dt/100+rprev
+        sum(cum_intensity)
+        
+        print(tspnext_list)
+        print(cum_intensity[-1,:])
+   
+        if (all(tspnext_list>cum_intensity[-1,:])): 
+            # No spike
+            print('no spike')
+            jbin = indx_chunk[-1]+1
+            rprev = cum_intensity[-1,:]
+        else: # Spike!
+            print('spike'+str(jbin))     
+            ispks,jspks = np.where(cum_intensity>=tspnext_list)
+
+            spikingNeuronIndx = np.unique(jspks[ispks == min(ispks)])
+            ispk = indx_chunk[min(ispks)]
+            rprev = cum_intensity[min(ispks),:];
+            
+            # add each spike
+            for j in range(len(spikingNeuronIndx)):
+                idx = spikingNeuronIndx[j]
+                tsp_list[idx].append(ispk*dt)
+                nsp[idx] = nsp[idx] + 1 
+            
+                # postspike effect if H is provided
+                if H is not None: 
+                    postspike_limit = min(length,ispk+hlen)
+                    indx_postSpk = np.arange(ispk+1,postspike_limit)
+                
+                    # adding the post-spike effect
+                    cov_effects[indx_postSpk,:] = cov_effects[indx_postSpk,:]+ih[idx][:(postspike_limit - ispk)-1,:]
+                rprev[idx] = 0
+                tspnext_list[idx] = random.expovariate(1)
+
+            jbin = ispk + 1
+            chunk_size = max(20,np.round(1.5*jbin/sum(nsp))) #TODO: make safe for Python 2.7
+    
+    return(tsp_list)
     
     
     
@@ -280,3 +440,82 @@ def makeInterpMatrix2(slen,nofBins):
         M[j*nofBins-phi:(j+2)*nofBins-phi,j] = cc
     M[nofBins*slen-nofBins - phi:nofBins*slen,slen-1] = cc[:nofBins+phi];
     return(M)
+    
+
+    
+# --------------- Unit Testing --------------------
+class testAuxiliaryFunctions(unittest.TestCase):
+    def testSimSpikesMultipleWithSingleNeuron(self):
+        """
+            This test is testing whether sampling with simSpikesMultiple and
+            coefficients for single neuron provides the same spike train as
+            sampling with simSpikes.
+            
+            Notes
+            -----
+            
+            I might want to change the domain for interpolation.            
+            
+        """
+        
+        import filters
+        
+        # generate stimulus
+        Stim = np.round(sp.rand(2500)*4-2);
+        
+        
+        dt = 0.01
+        
+        # create a stimulus filter
+        kpeaks = np.array([0,round(20/3)])
+        pars_k = {'neye':5,'n':5,'kpeaks':kpeaks,'b':3}
+        K,K_orth,kt_domain = filters.createStimulusBasis(pars_k, nkt = 20) 
+        
+        # create a post-spike filter
+        hpeaks = np.array([0.1,2])
+        pars_h = {'n':5,'hpeaks':hpeaks,'b':.4,'absref':0.}
+        H,H_orth,ht_domain = filters.createPostSpikeBasis(pars_h,dt)
+        
+        # convolving the stimulus with each basis function
+        Stim_convolved = sameconv(Stim,K)
+        
+        # interpolate on a new grid
+        
+
+        m = Stim_convolved.shape[0]
+        new_domain = np.arange(0,dt*m,dt)
+        M_k = np.zeros((len(new_domain),K.shape[1])) # this will fail for one dimensional K
+        for i in np.arange(K.shape[1]):
+            M_k[:,i] = np.interp(new_domain,np.arange(m),Stim_convolved[:,i])
+        #M_k = interp(np.arange(),np.range(Stim_convolved.shape[],Stim_convolved)
+        print(M_k.shape)
+        M = np.hstack((M_k,np.ones((M_k.shape[0],1))))
+        
+        # setting up the coefficients
+        coeff_k0 = np.array([ 0.061453,0.284916,0.860335,1.256983,0.910615,0.488660,-0.887091,0.097441,0.026607,-0.090147])
+        coeff_h0 = np.array([-10, -5, 0, 2, -2])
+        pars0 = np.hstack((coeff_k0,3,coeff_h0))
+        
+        # 
+        random.seed(0)
+        tsp_single = simSpikes(pars0,M,H,ht_domain,dt = 0.01)
+        
+        print(tsp_single)
+        
+        # 
+        random.seed(0)
+        tsp_multiple = simSpikesMultiple([pars0],M,H,ht_domain,dt = 0.01)
+        
+        # self.assertTrue(True)
+        self.assertTrue(tsp_single==tsp_multiple[0])
+        
+    
+# Test which compares the results of simSpikes and simSpikesMultiple when
+# simSpikesMultiple has only one neuron
+    
+# need to set the fix the random stream
+    
+if __name__ == '__main__':
+    unittest.main()
+    
+    
