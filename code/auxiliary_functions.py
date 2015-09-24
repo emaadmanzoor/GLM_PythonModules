@@ -254,12 +254,9 @@ def simSpikes(coef,M_k,H=None,ht_domain=None,dt=1):
         intensity_chunk = np.exp(cov_effects[indx_chunk])
         cum_intensity = np.cumsum(intensity_chunk)*dt/100+rprev
         
-        print(tspnext)
-        print(cum_intensity[-1])
    
         if (tspnext>cum_intensity[-1]): 
             # No spike
-            print('no spike')
             jbin = indx_chunk[-1]+1
             rprev = cum_intensity[-1]
         else: # Spike!
@@ -329,8 +326,7 @@ def simSpikesMultiple(coeff_list,M_k,H=None,ht_domain=None,dt=1):
     cov_effects = []
     ih = []
     
-    for i in range(nofNeurons):
-        
+    for i in range(nofNeurons):    
         coeff_k = coeff_list[i][:M_k.shape[1]]
         cov_effects.append(np.dot(M_k,coeff_k))
     
@@ -346,6 +342,7 @@ def simSpikesMultiple(coeff_list,M_k,H=None,ht_domain=None,dt=1):
 
             # interpolate with new positions
             # skip the interpolation for now
+            
             ih_interpolated = np.zeros((len(np.arange(dt,ht_domain[-1],dt)),nofNeurons))
             for j in range(nofNeurons):
                 ih_interpolated[:,j] = np.interp(np.arange(dt,ht_domain[-1],dt),ht_domain,np.dot(H,np.reshape(coeff_h,(H.shape[1],nofNeurons),order = 'F'))[:,j])
@@ -357,7 +354,7 @@ def simSpikesMultiple(coeff_list,M_k,H=None,ht_domain=None,dt=1):
     length = M_k.shape[0]
     jbin = 0
     rprev = [0]*nofNeurons
-    rprev =np.zeros((nofNeurons,))
+    rprev = np.zeros((nofNeurons,))
     chunk_size = 100 # decide on a size later
     # create a list of lists to hold the spike times for each neuron
     tsp_list = [[] for i in range(nofNeurons)]
@@ -372,14 +369,9 @@ def simSpikesMultiple(coeff_list,M_k,H=None,ht_domain=None,dt=1):
         indx_chunk = np.arange(jbin,min(jbin+chunk_size-1,length)).astype(int)
         intensity_chunk = np.exp(cov_effects[indx_chunk,:])
         cum_intensity = np.cumsum(intensity_chunk,axis=0)*dt/100+rprev
-        sum(cum_intensity)
-        
-        print(tspnext_list)
-        print(cum_intensity[-1,:])
    
         if (all(tspnext_list>cum_intensity[-1,:])): 
             # No spike
-            print('no spike')
             jbin = indx_chunk[-1]+1
             rprev = cum_intensity[-1,:]
         else: # Spike!
