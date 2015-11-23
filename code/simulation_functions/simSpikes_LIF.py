@@ -12,8 +12,8 @@
     
 """
 import numpy as np
-
 import time
+from numpy import linalg
 
 def simulate_LIF(E_l=-35,V0=0,V_th=-50,V_r=-60,dt=0.1,T = 10,tau = 20,I_ext=0):
     
@@ -147,8 +147,7 @@ def simulate_LIF_synaptic_conductance(E_l=-35,E_e=-55,V0=0,V_th=-50,V_r=-60,dt=0
         # I should maybe just accumulate the results at each iteration        
         spike_times = [time_index[idx.astype(bool)] for idx in list(Y[:,:i])]
         # some of them might be empty if there have not been spikes yet
-        
-        k = Kernel(time_index[i] - spike_times,tau)
+
         spike_times_filtered = ([sum(train) for train in k])
 
         
@@ -160,6 +159,109 @@ def simulate_LIF_synaptic_conductance(E_l=-35,E_e=-55,V0=0,V_th=-50,V_r=-60,dt=0
     
     
     return(time_index,V,Y)
+
+
+def simulate_synaptic_conductance(E_l=-35,E_e=-55,V0=0,V_th=-50,V_r=-60,dt=0.1,T = 10,tau = 20,I_ext=0,A_syn = None, A_gap = None):
+    
+    """ 
+        This function simulates the dynamics for LIF with a threshold V_th and
+        resting potential V_r with initial condition V0.
+        
+        For now just one neuron or many independent neurons.
+        
+        Parameters:
+        
+        A_syn - the adjacency matrix for the synaptic connections
+        A_gap - the adjacency matrix for the gap connections
+        
+        
+        Returns:
+        
+        time_index
+        V - action potential
+        Y - spike trains
+        
+    """
+    
+    # Auxiliary functions
+    def findEquilibrium(V_leak,E,A_g,A_s,g_gap,g_syn,G_c):
+        
+        # --------------------------------------------------------------------------
+        # To obtain equilibrium need to solve  B V_eq = c
+        
+        # determine a value R_m (it is the resistence)
+        # R_m_i*g_hat_ij = g_gap_over_C/G_c_over_C
+    
+        # V_leak - is a constant?
+    
+        c = V_leak + (g_syn/G_c)*np.dot(A_syn,E)/2 
+        B = - (g_gap/G_c)*A_gap  
+        B_diag = 1 + (g_gap/G_c)*np.sum(A_gap,axis = 1) + (g_syn/G_c)*np.sum(A_syn, axis = 1)/2
+        np.fill_diagonal(B,B_diag)
+        V_eq = linalg.solve(B,c)
+        return(V_eq)
+        
+    # More constants
+    g_syn = 10.0 * 1e-12 # synaptic conductance (S)
+    g_gap = 5.0 * 1e-12 # gap junctional conductance (S)
+    G_c = 100*1e-12
+        
+        
+        
+    
+    # setting some constants
+    R = 1 # assuming the resistence is 1 so I do not have constant in front of I_ext
+    
+    #----------------- Variable Initialization ---------------------
+    
+    # generate the time index over which the ODE will be solved
+    time_index = np.arange(0,T,dt)    
+    nofSteps = len(time_index)
+    
+    # Initializing the potential variable
+    N = len(V0) # number of neurons
+    V = np.zeros((N,nofSteps))
+    V[:,0] = V0 # initial condition
+  
+    # Initializing the spike train variable
+    # keep spike times or spike trains?
+    # if I have the time index, I can easily subset it by Y==1     
+    Y = np.zeros((N,nofSteps))
+    
+    # broadcasting the external current if one-dimensional
+    I_ext = I_ext*np.ones((N,nofSteps))  
+    
+    
+    # setting the diagonal zero so that neurons do not use their own history:        
+    np.fill_diagonal(W,0) 
+    
+    # initializing the capacitance to zero
+    g = np.zeros(V0.shape)
+    
+    # initialize the synaptic activity variable
+    s = np.zeros(V.shape)
+    
+    # calculate equilibrium
+        
+    s = findEquilibrium(V_e,E,A_gap,A_syn,g_gap,g_syn,G_c)
+    
+    # Solving the ODE
+    for i in range(nofSteps-1):
+        
+        
+        # Synaptic current
+        I_gap = np.dot(A_syn,V[:,i])*V[:,i] - np.dot(A_syn,s*E_e)  
+   
+        
+        # G current
+        I_syn = np.sum(A_gap)*V[:,i] - np.dot(A_gap,V[:,i])
+             
+        # potential update 
+        V[:,i+1] = V[:,i] - dt*((V[:,i]-E_l) + I_gap + I_syn + R*I_ext[:,i])/tau
+        
+        
+    return(time_index,V)
+
     
 # -------------------------------------------------------------------------------- 
     
