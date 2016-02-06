@@ -1,0 +1,584 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>code package &mdash; code  documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="code  documentation" href="index.html" />
+    <link rel="prev" title="Welcome to code’s documentation!" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="code-package">
+<h1>code package<a class="headerlink" href="#code-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-code.PoissonProcessClasses">
+<span id="code-poissonprocessclasses-module"></span><h2>code.PoissonProcessClasses module<a class="headerlink" href="#module-code.PoissonProcessClasses" title="Permalink to this headline">¶</a></h2>
+<p>This module contains classes for simulation and estimation of non-homogeneous Poisson processes.</p>
+<dl class="class">
+<dt id="code.PoissonProcessClasses.PPModel">
+<em class="property">class </em><code class="descclassname">code.PoissonProcessClasses.</code><code class="descname">PPModel</code><span class="sig-paren">(</span><em>covariates</em>, <em>coef=None</em>, <em>dt=1</em>, <em>f='exp'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class PPModel provides methods to sample and estimate parameters in nonhomogenous-time Poisson 
+processes.</p>
+<dl class="docutils">
+<dt>covariates <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>the array of covariates</dd>
+<dt>dt <span class="classifier-delimiter">:</span> <span class="classifier">float </span></dt>
+<dd>the time discretization</dd>
+<dt>coef <span class="classifier-delimiter">:</span> <span class="classifier">1D array </span></dt>
+<dd>parameters: not needed to initialize the object</dd>
+<dt>f <span class="classifier-delimiter">:</span> <span class="classifier">str or callable</span></dt>
+<dd>nonlinear function of the covariates</dd>
+</dl>
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>y</em>, <em>start_coef=None</em>, <em>method='L-BFGS-B'</em>, <em>maxiter=15000</em>, <em>disp=True</em>, <em>maxfev=10000</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes an estimate for the unknown coefficients based on response y.</p>
+<p>y : a 1D array of outputs 
+dt : the spacing between the observations
+start_coef : initial guess (if not given set to zeros)
+method : minimization method</p>
+<blockquote>
+<div>Should be one of
+‘Nelder-Mead’
+‘Powell’
+‘CG’
+‘BFGS’
+‘Newton-CG’
+‘Anneal (deprecated as of scipy version 0.14.0)’
+‘L-BFGS-B’
+‘TNC’
+‘COBYLA’
+‘SLSQP’
+‘dogleg’
+‘trust-ncg’
+custom - a callable object (added in version 0.14.0)</div></blockquote>
+<dl class="docutils">
+<dt>maxiter <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the maximum number of iterations</dd>
+<dt>disp <span class="classifier-delimiter">:</span> <span class="classifier">Boolean</span></dt>
+<dd>if True display minimization results</dd>
+</dl>
+<p>res: OptimizeResult object
+res.x : estimate for the coefficient
+res.success : Boolean
+res.fun : function value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.gradNegLogL">
+<code class="descname">gradNegLogL</code><span class="sig-paren">(</span><em>coef</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.gradNegLogL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.gradNegLogL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the gradient of the negative log-likelihood.</p>
+<p>coef : parameters
+y : response</p>
+<p>g : the gradient</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.hessNegLogL">
+<code class="descname">hessNegLogL</code><span class="sig-paren">(</span><em>coef</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.hessNegLogL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.hessNegLogL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the Hessian of the negative log-likelihood.</p>
+<p>coef : parameters
+y : response</p>
+<p>H : the Hessian</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.negLogL">
+<code class="descname">negLogL</code><span class="sig-paren">(</span><em>coef</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.negLogL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.negLogL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the negative log-likelohood.</p>
+<p>coef : parameters
+y : response</p>
+<p>l : the negative log-likelihood</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.sampleAcceptRejectPP">
+<code class="descname">sampleAcceptRejectPP</code><span class="sig-paren">(</span><em>coef</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.sampleAcceptRejectPP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.sampleAcceptRejectPP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples from a nonhomogenous Poisson process by first sampling interarrival times
+from a homogeneous Poisson process with rate lambda_max = max(intensity), and then
+accepting the observations with probability intensity/lambda_max</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.sampleEvents">
+<code class="descname">sampleEvents</code><span class="sig-paren">(</span><em>coef</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.sampleEvents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.sampleEvents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a sequence of events based on a Poisson process with
+a time-dependent intensity. The procedure generates an event in the
+i&#8217;th bin with probability intensity(i)*dt, and events in distinct bins
+are independent (Bernoulli trials).</p>
+<p>intensity : an array of 
+dt: float</p>
+<blockquote>
+<div>the spacing between two evaluations of the intensity</div></blockquote>
+<p>an array (same length as intensity)
+= 1 - event occurs
+= 0 - event does not occur</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.PPModel.samplePiecewiseConstantPP">
+<code class="descname">samplePiecewiseConstantPP</code><span class="sig-paren">(</span><em>coef</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#PPModel.samplePiecewiseConstantPP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.PPModel.samplePiecewiseConstantPP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples observations from a Poisson process with a piecewise-constant
+intensity.</p>
+<p>coef: parameters</p>
+<dl class="docutils">
+<dt>y <span class="classifier-delimiter">:</span> <span class="classifier">1D array (same shape as intensity) </span></dt>
+<dd>the number of events in each bin</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses">
+<em class="property">class </em><code class="descclassname">code.PoissonProcessClasses.</code><code class="descname">testPoissonProcessClasses</code><span class="sig-paren">(</span><em>methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses.test_estimation">
+<code class="descname">test_estimation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses.test_estimation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses.test_estimation" title="Permalink to this definition">¶</a></dt>
+<dd><p>This test  tests the estimation performance when 
+N is large and d is small.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses.test_oneInput">
+<code class="descname">test_oneInput</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses.test_oneInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses.test_oneInput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses.test_passing_nonlinearity">
+<code class="descname">test_passing_nonlinearity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses.test_passing_nonlinearity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses.test_passing_nonlinearity" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function tests the passing a user-defined inverse-link function. 
+Passing a user defined exponential function should coincide with the
+default exponential function.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses.test_prediction">
+<code class="descname">test_prediction</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses.test_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses.test_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is testing the prediction when l = exp(theta).
+In this case each observation comes from a Poisson distribution with
+a rate theta_i so the estimate for theta will rely on whether there
+was an event in the bin or not, which results in a good prediction 
+(though not so good estimation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses.test_simulation">
+<code class="descname">test_simulation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses.test_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses.test_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>This test checks whether the mean number of spikes is 
+sum(insensity)*dt.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessClasses.testPoissonProcessClasses.test_simulation_constant">
+<code class="descname">test_simulation_constant</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessClasses.html#testPoissonProcessClasses.test_simulation_constant"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessClasses.testPoissonProcessClasses.test_simulation_constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>This test checks whether the mean number of spikes is 
+insensity*dt*N (intensity is constant).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-code.PoissonProcessMethods">
+<span id="code-poissonprocessmethods-module"></span><h2>code.PoissonProcessMethods module<a class="headerlink" href="#module-code.PoissonProcessMethods" title="Permalink to this headline">¶</a></h2>
+<p>PoissonProcessMethods module contains functions for simulating and estimating
+nonhomogenous Poisson processes.</p>
+<dl class="function">
+<dt id="code.PoissonProcessMethods.poissonRegression">
+<code class="descclassname">code.PoissonProcessMethods.</code><code class="descname">poissonRegression</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>theta_0</em>, <em>dt=1</em>, <em>f='exp'</em>, <em>method='L-BFGS-B'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#poissonRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.poissonRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>poissonRegression computes an estimate for the coefficients theta</p>
+<p>X : a 2D array of covariates
+y : a 1D array of outputs 
+dt : the spacing between the observations
+theta_0 : initial guess 
+f : str or callable</p>
+<blockquote>
+<div>The inverse link function: default is exp, but one can pass any function.
+! Some functions may break the convergence of the algorithm.</div></blockquote>
+<p>theta_MLE : array</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">1000</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Y</span> <span class="o">=</span> <span class="n">sampleEvents</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="mf">0.01</span><span class="p">)</span> 
+<span class="gp">&gt;&gt;&gt; </span><span class="n">theta_MLE</span> <span class="o">=</span> <span class="n">poissonRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">dt</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>provide a model structure to change</li>
+<li>index of columns to use (factors)</li>
+<li>the pdf (assuming independence of bins: use transition density otherwise)</li>
+<li>information about dt</li>
+<li>provide statistics for the fit of the regression?</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.PoissonProcessMethods.sampleEvents">
+<code class="descclassname">code.PoissonProcessMethods.</code><code class="descname">sampleEvents</code><span class="sig-paren">(</span><em>intensity</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#sampleEvents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.sampleEvents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a sequence of events based on a Poisson process with
+a time-dependent intensity.</p>
+<p>intensity : an array of 
+dt: float</p>
+<blockquote>
+<div>the spacing between two evaluations of the intensity</div></blockquote>
+<p>an array (same length as intensity)
+= 1 - event occurs
+= 0 - event does not occur</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.PoissonProcessMethods.sampleHomogeneousPP">
+<code class="descclassname">code.PoissonProcessMethods.</code><code class="descname">sampleHomogeneousPP</code><span class="sig-paren">(</span><em>l</em>, <em>N</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#sampleHomogeneousPP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.sampleHomogeneousPP" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function samples from a homogenous Poisson process.</p>
+<p>l : float</p>
+<blockquote>
+<div>the rate of the Poisson process</div></blockquote>
+<dl class="docutils">
+<dt>N <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of observations from the process</dd>
+</dl>
+<dl class="docutils">
+<dt>eventTimes <span class="classifier-delimiter">:</span> <span class="classifier">array of shape (N,)</span></dt>
+<dd><ul class="first last simple">
+<li>the time at which the events occur</li>
+</ul>
+</dd>
+</dl>
+<p>There could be multiple observations occurring at the same time.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.PoissonProcessMethods.sampleInhomogeneousPP">
+<code class="descclassname">code.PoissonProcessMethods.</code><code class="descname">sampleInhomogeneousPP</code><span class="sig-paren">(</span><em>intensity</em>, <em>dt</em>, <em>I</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#sampleInhomogeneousPP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.sampleInhomogeneousPP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples time events on an interval [0,N)
+according to an inhomogeneous Poisson process with
+conditional intensity lambda</p>
+<p>intensity : array
+I : time interval [0,N]</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.PoissonProcessMethods.samplePiecewiseConstantPP">
+<code class="descclassname">code.PoissonProcessMethods.</code><code class="descname">samplePiecewiseConstantPP</code><span class="sig-paren">(</span><em>intensity</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#samplePiecewiseConstantPP"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.samplePiecewiseConstantPP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples observations from a Poisson process with a piecewise-constant
+intensity.</p>
+<dl class="docutils">
+<dt>intensity <span class="classifier-delimiter">:</span> <span class="classifier">1D array</span></dt>
+<dd>the intensity evaluated at each bin</dd>
+<dt>dt <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>the length of the bin</dd>
+</dl>
+<dl class="docutils">
+<dt>y <span class="classifier-delimiter">:</span> <span class="classifier">1D array (same shape as intensity) </span></dt>
+<dd>the number of events in each bin</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="code.PoissonProcessMethods.testPoissonProcessMethods">
+<em class="property">class </em><code class="descclassname">code.PoissonProcessMethods.</code><code class="descname">testPoissonProcessMethods</code><span class="sig-paren">(</span><em>methodName='runTest'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#testPoissonProcessMethods"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.testPoissonProcessMethods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">unittest.case.TestCase</span></code></p>
+<dl class="method">
+<dt id="code.PoissonProcessMethods.testPoissonProcessMethods.test_estimation">
+<code class="descname">test_estimation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#testPoissonProcessMethods.test_estimation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.testPoissonProcessMethods.test_estimation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessMethods.testPoissonProcessMethods.test_oneInput">
+<code class="descname">test_oneInput</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#testPoissonProcessMethods.test_oneInput"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.testPoissonProcessMethods.test_oneInput" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessMethods.testPoissonProcessMethods.test_passing_nonlinearity">
+<code class="descname">test_passing_nonlinearity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#testPoissonProcessMethods.test_passing_nonlinearity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.testPoissonProcessMethods.test_passing_nonlinearity" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function tests the passing a user-defined inverse-link function. 
+Passing a user defined exponential function should coincide with the
+default exponential function.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessMethods.testPoissonProcessMethods.test_prediction">
+<code class="descname">test_prediction</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#testPoissonProcessMethods.test_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.testPoissonProcessMethods.test_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is testing the prediction when l = exp(theta).
+In this case each observation comes from a Poisson distribution with
+a rate theta_i so the estimate for theta will rely on whether there
+was an event in the bin or not, which results in a good prediction 
+(though not so good estimation)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="code.PoissonProcessMethods.testPoissonProcessMethods.test_simulation">
+<code class="descname">test_simulation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/PoissonProcessMethods.html#testPoissonProcessMethods.test_simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.PoissonProcessMethods.testPoissonProcessMethods.test_simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function tests how good the simulation of the Poisson process is.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-code.auxiliary_functions">
+<span id="code-auxiliary-functions-module"></span><h2>code.auxiliary_functions module<a class="headerlink" href="#module-code.auxiliary_functions" title="Permalink to this headline">¶</a></h2>
+<p>This module contains some auxiliary functions for processing the signals.</p>
+<dl class="function">
+<dt id="code.auxiliary_functions.STA">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">STA</code><span class="sig-paren">(</span><em>X</em>, <em>y</em>, <em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#STA"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.STA" title="Permalink to this definition">¶</a></dt>
+<dd><p>STA computes the spike triggered average for given spike train and stimulus.</p>
+<blockquote>
+<div>X : stimulus (d x T array)
+y : spike count (1 x T array)
+n : the window size for the average</div></blockquote>
+<blockquote>
+<div>sta : the spike-triggered average (d x n)</div></blockquote>
+<dl class="docutils">
+<dt>Notes:</dt>
+<dd><p class="first">here I assume I deal with numpy arrays
+I can modify to deal with data frames and time indeces
+Incorporate whitening.
+remove for loop
+process different inputs,outputs
+include covariance output</p>
+<p>#TODO
+test function</p>
+<p class="last">Note: not currently used</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.auxiliary_functions.extractPCABasis">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">extractPCABasis</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#extractPCABasis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.extractPCABasis" title="Permalink to this definition">¶</a></dt>
+<dd><p>B = extractPCABasis(X,n)</p>
+<p>extractPCAbasis extracts a basis of fixed dimension for data X</p>
+<p>if n is not provided, the dimension of the basis extracted automatically</p>
+<p>#TODO
+test function</p>
+<p>Note: not currently used</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.auxiliary_functions.makeInterpMatrix">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">makeInterpMatrix</code><span class="sig-paren">(</span><em>slen</em>, <em>nofBins</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#makeInterpMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.makeInterpMatrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="code.auxiliary_functions.makeInterpMatrix2">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">makeInterpMatrix2</code><span class="sig-paren">(</span><em>slen</em>, <em>nofBins</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#makeInterpMatrix2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.makeInterpMatrix2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="code.auxiliary_functions.sameconv">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">sameconv</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#sameconv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.sameconv" title="Permalink to this definition">¶</a></dt>
+<dd><p>filtered_a = sameconv(a,b)
+sameconv causally filters a with b</p>
+<p>a : array
+b : array  (1D or 2D)</p>
+<blockquote>
+<div>If b is a two-dimensional array, it filters a with each column of b</div></blockquote>
+<dl class="docutils">
+<dt>filtered_a <span class="classifier-delimiter">:</span> <span class="classifier">array</span></dt>
+<dd>same shape as a</dd>
+</dl>
+<p>Check if there is built-in function. Check if I should use rfft.</p>
+<p>Check if np.convolve(&#8216;same&#8217;) can be used: length is max(M, N).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.auxiliary_functions.simSpikes">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">simSpikes</code><span class="sig-paren">(</span><em>coef</em>, <em>M_k</em>, <em>M_h</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#simSpikes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.simSpikes" title="Permalink to this definition">¶</a></dt>
+<dd><p>simSpikes- function to simulate</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.auxiliary_functions.spikeconv">
+<code class="descclassname">code.auxiliary_functions.</code><code class="descname">spikeconv</code><span class="sig-paren">(</span><em>tsp</em>, <em>H</em>, <em>domain</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/auxiliary_functions.html#spikeconv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.auxiliary_functions.spikeconv" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function performs convolution of the spike train with the filter H</p>
+<dl class="docutils">
+<dt>tsp <span class="classifier-delimiter">:</span> <span class="classifier">1D array</span></dt>
+<dd>the spike_train</dd>
+<dt>H <span class="classifier-delimiter">:</span> <span class="classifier">2D array</span></dt>
+<dd>the filter basis</dd>
+</dl>
+<p>domain : array of length 2</p>
+<dl class="docutils">
+<dt>hcurrent <span class="classifier-delimiter">:</span> <span class="classifier">array shape (domain[1]-domain[0]+1, H.shape[1])</span></dt>
+<dd>the convolved spike train</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-code.filters">
+<span id="code-filters-module"></span><h2>code.filters module<a class="headerlink" href="#module-code.filters" title="Permalink to this headline">¶</a></h2>
+<p>This module contains functions which generate cosine bump basis vectors 
+for the stimulus and post-spike filters.</p>
+<p>Function list:
+createRaisedCosineBasis
+createStimulusBasis
+createPostSpikeBasis</p>
+<dl class="function">
+<dt id="code.filters.createPostSpikeBasis">
+<code class="descclassname">code.filters.</code><code class="descname">createPostSpikeBasis</code><span class="sig-paren">(</span><em>pars</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/filters.html#createPostSpikeBasis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.filters.createPostSpikeBasis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a basis for a post-spike filter.</p>
+<p>pars : a dictionary of basis parameters
+pars[&#8216;n&#8217;] :</p>
+<blockquote>
+<div>number of vectors which are raised cosines</div></blockquote>
+<dl class="docutils">
+<dt>pars[&#8216;hpeaks&#8217;] <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd>peak position for first and last vector</dd>
+<dt>pars[&#8216;b&#8217;] <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd>offset for linear scaling</dd>
+<dt>pars[&#8216;absref&#8217;] <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd>absolute refractory period (optional)</dd>
+</dl>
+<p>dt : discretization step of the time domain</p>
+<p>hbasis : basis
+hbasis_orth : normalized basis
+t_domain : the time domain</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.filters.createRaisedCosineBasis">
+<code class="descclassname">code.filters.</code><code class="descname">createRaisedCosineBasis</code><span class="sig-paren">(</span><em>n</em>, <em>peaks</em>, <em>b</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/filters.html#createRaisedCosineBasis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.filters.createRaisedCosineBasis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a basis of raised cosine bump functions.</p>
+<dl class="docutils">
+<dt>n <span class="classifier-delimiter">:</span> <span class="classifier">int</span></dt>
+<dd>the number of basis functions</dd>
+<dt>peaks <span class="classifier-delimiter">:</span> <span class="classifier">1D array of length 2 </span></dt>
+<dd>the range within which the peaks occur</dd>
+<dt>b <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>offset</dd>
+<dt>dt <span class="classifier-delimiter">:</span> <span class="classifier">float</span></dt>
+<dd>discretization step of the time domain</dd>
+</dl>
+<dl class="docutils">
+<dt>basis <span class="classifier-delimiter">:</span> <span class="classifier">array of shape </span></dt>
+<dd>basis of cosine bump functions</dd>
+<dt>t_domain <span class="classifier-delimiter">:</span> <span class="classifier"></span></dt>
+<dd>the time domain</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="code.filters.createStimulusBasis">
+<code class="descclassname">code.filters.</code><code class="descname">createStimulusBasis</code><span class="sig-paren">(</span><em>pars</em>, <em>nkt=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/code/filters.html#createStimulusBasis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#code.filters.createStimulusBasis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a basis for a stimulus filter.</p>
+<p>pars : dictionary of basis parameters
+pars[&#8216;neye&#8217;] : number of identity basis vectors in front
+pars[&#8216;n&#8217;] : number of vectors which are raised cosines
+pars[&#8216;kpeaks&#8217;] : peak position for first and last vector
+pars[&#8216;b&#8217;] : offset for linear scaling
+pars[&#8216;nkt&#8217;] : number of time samples in basis (optional?)</p>
+<p>kbasis : basis
+kbasis_orth : normalized basis
+t_domain : time domain</p>
+</dd></dl>
+
+</div>
+<div class="section" id="code-likelihood-functions-module">
+<h2>code.likelihood_functions module<a class="headerlink" href="#code-likelihood-functions-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-code">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-code" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">code package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-code.PoissonProcessClasses">code.PoissonProcessClasses module</a></li>
+<li><a class="reference internal" href="#module-code.PoissonProcessMethods">code.PoissonProcessMethods module</a></li>
+<li><a class="reference internal" href="#module-code.auxiliary_functions">code.auxiliary_functions module</a></li>
+<li><a class="reference internal" href="#module-code.filters">code.filters module</a></li>
+<li><a class="reference internal" href="#code-likelihood-functions-module">code.likelihood_functions module</a></li>
+<li><a class="reference internal" href="#module-code">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to code&#8217;s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/code.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/code.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
