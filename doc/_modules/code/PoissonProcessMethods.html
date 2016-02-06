@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>code.PoissonProcessMethods &mdash; code  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="code  documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for code.PoissonProcessMethods</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">PoissonProcessMethods module contains functions for simulating and estimating</span>
+<span class="sd">nonhomogenous Poisson processes.    </span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">random</span>
+<span class="kn">import</span> <span class="nn">unittest</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+
+<div class="viewcode-block" id="sampleHomogeneousPP"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.sampleHomogeneousPP">[docs]</a><span class="k">def</span> <span class="nf">sampleHomogeneousPP</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">N</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function samples from a homogenous Poisson process. </span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        </span>
+<span class="sd">        l : float</span>
+<span class="sd">            </span>
+<span class="sd">            the rate of the Poisson process</span>
+<span class="sd">            </span>
+<span class="sd">        N : int</span>
+<span class="sd">            the number of observations from the process</span>
+
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        eventTimes : array of shape (N,)</span>
+<span class="sd">            - the time at which the events occur</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        </span>
+<span class="sd">        There could be multiple observations occurring at the same time.</span>
+<span class="sd">                        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">interArrivalTimes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">expovariate</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="n">l</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N</span><span class="p">)]</span>
+    <span class="n">eventTimes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">interArrivalTimes</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">eventTimes</span><span class="p">)</span>
+    
+    
+    
+    </div>
+<div class="viewcode-block" id="sampleEvents"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.sampleEvents">[docs]</a><span class="k">def</span> <span class="nf">sampleEvents</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a sequence of events based on a Poisson process with</span>
+<span class="sd">        a time-dependent intensity.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        intensity : an array of </span>
+<span class="sd">        dt: float</span>
+<span class="sd">            the spacing between two evaluations of the intensity</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        an array (same length as intensity)</span>
+<span class="sd">        = 1 - event occurs</span>
+<span class="sd">        = 0 - event does not occur</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">intensity</span><span class="p">))</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">intensity</span><span class="o">*</span><span class="n">dt</span><span class="o">&gt;</span><span class="n">u</span><span class="p">)</span>
+
+
+
+</div>
+<div class="viewcode-block" id="sampleInhomogeneousPP"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.sampleInhomogeneousPP">[docs]</a><span class="k">def</span> <span class="nf">sampleInhomogeneousPP</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span><span class="n">dt</span><span class="p">,</span><span class="n">I</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Samples time events on an interval [0,N)</span>
+<span class="sd">        according to an inhomogeneous Poisson process with</span>
+<span class="sd">        conditional intensity lambda</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        intensity : array</span>
+<span class="sd">        I : time interval [0,N]           </span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">                </span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Lambda</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">Lambda</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">I</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">size</span> <span class="o">=</span> <span class="n">n</span><span class="p">)</span>
+    <span class="c">#TODO need inverse</span>
+    <span class="k">print</span> <span class="p">(</span><span class="s">&#39;Need to calculate the inverse of the intensity&#39;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span>
+    
+    </div>
+<div class="viewcode-block" id="samplePiecewiseConstantPP"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.samplePiecewiseConstantPP">[docs]</a><span class="k">def</span> <span class="nf">samplePiecewiseConstantPP</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span><span class="n">dt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Samples observations from a Poisson process with a piecewise-constant</span>
+<span class="sd">        intensity.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        </span>
+<span class="sd">        intensity : 1D array</span>
+<span class="sd">            the intensity evaluated at each bin</span>
+<span class="sd">        dt : float</span>
+<span class="sd">            the length of the bin</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        y : 1D array (same shape as intensity) </span>
+<span class="sd">            the number of events in each bin</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">l</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    
+
+</div>
+<div class="viewcode-block" id="poissonRegression"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.poissonRegression">[docs]</a><span class="k">def</span> <span class="nf">poissonRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">theta_0</span><span class="p">,</span><span class="n">dt</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">f</span> <span class="o">=</span> <span class="s">&#39;exp&#39;</span><span class="p">,</span><span class="n">method</span> <span class="o">=</span> <span class="s">&#39;L-BFGS-B&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; poissonRegression computes an estimate for the coefficients theta</span>
+<span class="sd">                        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : a 2D array of covariates</span>
+<span class="sd">        y : a 1D array of outputs </span>
+<span class="sd">        dt : the spacing between the observations</span>
+<span class="sd">        theta_0 : initial guess </span>
+<span class="sd">        f : str or callable</span>
+<span class="sd">            The inverse link function: default is exp, but one can pass any function.</span>
+<span class="sd">            ! Some functions may break the convergence of the algorithm.</span>
+<span class="sd">            </span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        theta_MLE : array</span>
+<span class="sd">        </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; theta = np.random.normal(size = (2,))</span>
+<span class="sd">        &gt;&gt;&gt; X = 0.1*np.random.normal(size = (2,1000))</span>
+<span class="sd">        &gt;&gt;&gt; l = np.exp(np.dot(X.T,theta))</span>
+<span class="sd">        &gt;&gt;&gt; Y = sampleEvents(l,0.01) </span>
+<span class="sd">        &gt;&gt;&gt; theta_MLE = poissonRegression(X,Y,dt,np.zeros(theta.shape))</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        ------</span>
+<span class="sd">        - provide a model structure to change</span>
+<span class="sd">        - index of columns to use (factors)        </span>
+<span class="sd">        - the pdf (assuming independence of bins: use transition density otherwise)</span>
+<span class="sd">        - information about dt</span>
+<span class="sd">        - provide statistics for the fit of the regression?        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    
+    
+    <span class="k">def</span> <span class="nf">negLogL</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dt</span><span class="p">,</span><span class="n">f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">           theta : parameters</span>
+<span class="sd">           X : covariates</span>
+<span class="sd">           y : response</span>
+<span class="sd">           dt : discretization step</span>
+<span class="sd">           f : nonlinear transformation of the input (default is exp)</span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># calculate the intensity of the Poisson process</span>
+        <span class="c">#intensity = np.exp(np.dot(X.T,theta))# for log link</span>
+        
+        <span class="k">if</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;exp&#39;</span><span class="p">:</span> 
+            <span class="n">intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>        
+            <span class="n">intensity</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c"># bins with spikes and bins with no spikes</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span> <span class="o">-</span> <span class="nb">sum</span><span class="p">(</span><span class="n">y</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">intensity</span><span class="p">))</span>
+        
+        <span class="k">return</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+        
+    
+    <span class="k">def</span> <span class="nf">grad</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dt</span><span class="p">,</span><span class="n">f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">           theta : parameters</span>
+<span class="sd">           X : covariates</span>
+<span class="sd">           y : response</span>
+<span class="sd">           dt : discretization step</span>
+<span class="sd">           f : nonlinear transformation of the input (default is exp)</span>
+<span class="sd">           (should return the function value and its derivative)</span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="o">==</span> <span class="s">&#39;exp&#39;</span><span class="p">:</span> 
+            <span class="c"># log-link</span>
+            <span class="n">intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span> 
+            <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">intensity</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">intensity</span><span class="p">,</span><span class="n">d_intensity</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">d_intensity</span><span class="p">)</span><span class="o">*</span><span class="n">dt</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">,(</span><span class="n">y</span><span class="o">*</span><span class="n">intensity</span><span class="o">/</span><span class="n">d_intensity</span><span class="p">))</span>
+               
+        <span class="k">return</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>  
+        
+    <span class="c">#TODO</span>
+    <span class="c"># def Hessian</span>
+            
+
+    <span class="n">opts</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;disp&#39;</span><span class="p">:</span><span class="bp">True</span><span class="p">,</span><span class="s">&#39;maxiter&#39;</span><span class="p">:</span> <span class="mi">200</span><span class="p">}</span>
+    <span class="n">theta_hat</span> <span class="o">=</span> <span class="n">optimize</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">negLogL</span><span class="p">,</span><span class="n">theta_0</span><span class="p">,</span> <span class="n">jac</span> <span class="o">=</span> <span class="n">grad</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">dt</span><span class="p">,</span><span class="n">f</span><span class="p">),</span><span class="n">options</span> <span class="o">=</span> <span class="n">opts</span><span class="p">,</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="n">x</span>
+    <span class="c"># theta_hat = optimize.minimize(negLogL,theta_0, args = (X,y,dt),options = opts).x</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">theta_hat</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="testPoissonProcessMethods"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.testPoissonProcessMethods">[docs]</a><span class="k">class</span> <span class="nc">testPoissonProcessMethods</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+<div class="viewcode-block" id="testPoissonProcessMethods.test_passing_nonlinearity"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.testPoissonProcessMethods.test_passing_nonlinearity">[docs]</a>    <span class="k">def</span> <span class="nf">test_passing_nonlinearity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">            This function tests the passing a user-defined inverse-link function. </span>
+<span class="sd">            Passing a user defined exponential function should coincide with the</span>
+<span class="sd">            default exponential function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,))</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">))</span>
+        <span class="c"># generate spike trains according to the poisson process</span>
+        
+        
+    
+        <span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.01</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">sampleEvents</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span> 
+        
+        <span class="k">def</span> <span class="nf">myExponential</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">theta_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">theta_hat1</span> <span class="o">=</span> <span class="n">poissonRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">theta_0</span><span class="p">,</span><span class="mf">0.1</span><span class="p">,</span><span class="n">myExponential</span><span class="p">)</span>
+        <span class="n">theta_hat2</span> <span class="o">=</span> <span class="n">poissonRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">theta_0</span><span class="p">,</span><span class="mf">0.1</span><span class="p">,</span><span class="s">&#39;exp&#39;</span><span class="p">)</span>
+        
+        <span class="c">#self.assertEqual(theta_hat1,theta_hat2)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="n">theta_hat1</span><span class="p">,</span><span class="n">theta_hat2</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="testPoissonProcessMethods.test_estimation"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.testPoissonProcessMethods.test_estimation">[docs]</a>    <span class="k">def</span> <span class="nf">test_estimation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="mi">10000</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="p">,))</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">N</span><span class="p">))</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">sampleEvents</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span> 
+        <span class="n">theta_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">theta_MLE</span> <span class="o">=</span> <span class="n">poissonRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">theta_0</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">theta_MLE</span> <span class="o">-</span> <span class="n">theta</span><span class="p">))</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="mi">5</span><span class="o">*</span><span class="n">d</span>
+        <span class="c"># print(error)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">error</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">,</span> <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Estimation failed with error tolerance = 5d&quot;</span><span class="p">)</span>   
+        </div>
+<div class="viewcode-block" id="testPoissonProcessMethods.test_prediction"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.testPoissonProcessMethods.test_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">test_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            This function is testing the prediction when l = exp(theta).</span>
+<span class="sd">            In this case each observation comes from a Poisson distribution with</span>
+<span class="sd">            a rate theta_i so the estimate for theta will rely on whether there</span>
+<span class="sd">            was an event in the bin or not, which results in a good prediction </span>
+<span class="sd">            (though not so good estimation)</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        
+        <span class="n">N</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">size</span> <span class="o">=</span> <span class="p">(</span><span class="n">N</span><span class="p">,))</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta</span><span class="p">))</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">sampleEvents</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span> 
+        <span class="n">theta_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">theta_MLE</span> <span class="o">=</span> <span class="n">poissonRegression</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">theta_0</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">l_predicted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">theta_MLE</span><span class="p">))</span>
+        <span class="n">Y_predicted</span> <span class="o">=</span> <span class="n">sampleEvents</span><span class="p">(</span><span class="n">l_predicted</span><span class="p">,</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">Y</span><span class="o">+</span><span class="n">Y_predicted</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">error_rate</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="n">Y_predicted</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s">&#39;float64&#39;</span><span class="p">)</span><span class="o">/</span><span class="n">total</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">error_rate</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;No events observed.&#39;</span><span class="p">)</span>
+            
+        <span class="n">tol</span> <span class="o">=</span> <span class="o">.</span><span class="mi">1</span>
+        <span class="c"># print(&#39;error_rate&#39;+str(error_rate))</span>
+        <span class="c"># print(sum(np.abs(Y - Y_predicted)))</span>
+        <span class="c"># print(sum(Y+Y_predicted)/2.)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">error_rate</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">)</span>  
+        </div>
+<div class="viewcode-block" id="testPoissonProcessMethods.test_simulation"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.testPoissonProcessMethods.test_simulation">[docs]</a>    <span class="k">def</span> <span class="nf">test_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            This function tests how good the simulation of the Poisson process is.</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">N</span><span class="p">,))</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">sampleEvents</span><span class="p">(</span><span class="n">intensity</span><span class="p">,</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="n">tol</span> <span class="o">=</span> <span class="mf">0.1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s">&#39;Float64&#39;</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.3</span><span class="p">)</span><span class="o">&lt;</span><span class="n">tol</span><span class="p">,</span><span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Incomplete test&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="testPoissonProcessMethods.test_oneInput"><a class="viewcode-back" href="../../code.html#code.PoissonProcessMethods.testPoissonProcessMethods.test_oneInput">[docs]</a>    <span class="k">def</span> <span class="nf">test_oneInput</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+                
+</div></div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Author.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
